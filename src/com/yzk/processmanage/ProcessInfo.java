@@ -3,7 +3,8 @@ package com.yzk.processmanage;
 import android.graphics.drawable.Drawable;
 
 public class ProcessInfo {
-	
+
+    private int mPid;
 	private Drawable mIcon;
 	private String mName;
 	private String mInfo;
@@ -11,11 +12,20 @@ public class ProcessInfo {
 	public ProcessInfo() {
 	}
 	
-	public ProcessInfo(Drawable icon, String name, String info) {
+	public ProcessInfo(int pid, Drawable icon, String name, String info) {
+        mPid = pid;
 		mIcon = icon;
 		mName = name;
 		mInfo = info;
 	}
+
+    public int getPid() {
+        return mPid;
+    }
+
+    public void setPid(int pid) {
+        mPid = pid;
+    }
 	
 	public Drawable getIcon() {
 		return mIcon;

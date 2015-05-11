@@ -10,16 +10,18 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Debug;
+import android.os.Process;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ListView;
+import android.widget.Toast;
 
 public class ListProcessActivity extends Activity {
 	
-	private ListView mListProcessView;
-	private ListProcessAdapter mListProcessAdapter;
+	private SwipeListView mListProcessView;
+	private SwipeAdapter mSwipeAdapter;
 	private ArrayList<ProcessInfo> mProcessList = new ArrayList<ProcessInfo>();
 	private ActivityManager mActivityManager;
 	
@@ -29,9 +31,23 @@ public class ListProcessActivity extends Activity {
 		setContentView(R.layout.activity_list_process);
 		mActivityManager=(ActivityManager)getSystemService(ACTIVITY_SERVICE);
 		
-		mListProcessView = (ListView) findViewById(R.id.ListProcess);
-		mListProcessAdapter = new ListProcessAdapter(this);
-		mListProcessView.setAdapter(mListProcessAdapter);
+		mListProcessView = (SwipeListView) findViewById(R.id.ListProcess);
+        mSwipeAdapter = new SwipeAdapter(this, mListProcessView.getRightViewWidth(),
+                new SwipeAdapter.IOnItemRightClickListener() {
+                    @Override
+                    public void onRightClick(View v, int position) {
+                        Toast.makeText(ListProcessActivity.this, "right onclick " + position, Toast.LENGTH_SHORT).show();
+                        if (position >=0 && !mProcessList.isEmpty() && position < mProcessList.size()) {
+                            ProcessInfo process = mProcessList.get(position);
+                            Log.d("ListProcessActivity", "kill process: " + process.getName());
+                            Process.sendSignal(process.getPid(), Process.SIGNAL_KILL);
+                            //mActivityManager.killBackgroundProcesses(process.getName());
+                            mProcessList.remove(position);
+                            mSwipeAdapter.setData(mProcessList);
+                        }
+                    }
+        });
+		mListProcessView.setAdapter(mSwipeAdapter);
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
 				// TODO Auto-generated method stub
@@ -41,8 +57,9 @@ public class ListProcessActivity extends Activity {
 		thread.start();
 		
 		mListProcessView.setOnItemClickListener(new OnItemClickListener() {
-			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				// TODO Auto-generated method stub
+                Toast.makeText(ListProcessActivity.this, "item onclick " + position, Toast.LENGTH_SHORT).show();
 			}
 		});
 	}
@@ -53,9 +70,9 @@ public class ListProcessActivity extends Activity {
 		List<RunningAppProcessInfo> apps = mActivityManager.getRunningAppProcesses();
 		for (RunningAppProcessInfo app : apps) {
 			ProcessInfo procInfo = new ProcessInfo();
+            procInfo.setPid(app.pid);
 			procInfo.setName(app.processName);
-			
-			StringBuilder info = new StringBuilder("PID: ");
+            StringBuilder info = new StringBuilder("PID: ");
 			info.append(app.pid).append("   MemoryInfo: ");
 			int[] mempid = new int[] { app.pid };
 			Debug.MemoryInfo[] memoryInfo = mActivityManager.getProcessMemoryInfo(mempid);
@@ -72,7 +89,7 @@ public class ListProcessActivity extends Activity {
 		runOnUiThread(new Runnable() {
 			public void run() {
 				// TODO Auto-generated method stub
-				mListProcessAdapter.setData(mProcessList);
+                mSwipeAdapter.setData(mProcessList);
 			}
 		});
 	}
